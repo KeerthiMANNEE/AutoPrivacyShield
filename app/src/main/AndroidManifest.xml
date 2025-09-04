@@ -2,11 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.autoprivacyshield">
 
-    <!-- Foreground service permissions -->
+    <!-- Permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
-
-    <!-- Notification permission (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
@@ -43,5 +41,8 @@
             </intent-filter>
         </service>
 
+        <!-- Removed static receiver declaration for NotificationBroadcastReceiver -->
+
     </application>
+
 </manifest>

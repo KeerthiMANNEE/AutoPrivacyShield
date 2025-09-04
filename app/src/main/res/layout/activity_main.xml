@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center"
+    android:gravity="center_horizontal"
     android:orientation="vertical"
     android:padding="16dp">
 
@@ -19,5 +19,13 @@
         android:src="@mipmap/ic_launcher"
         android:contentDescription="@string/app_name"
         android:layout_marginTop="20dp" />
+
+    <TextView
+        android:id="@+id/notificationTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Notifications will appear here"
+        android:textSize="16sp"
+        android:paddingTop="20dp" />
 
 </LinearLayout>

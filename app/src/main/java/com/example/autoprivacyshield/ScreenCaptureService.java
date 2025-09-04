@@ -16,6 +16,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 
@@ -30,6 +31,8 @@ public class ScreenCaptureService extends Service {
     private int screenDensity;
     private int screenWidth;
     private int screenHeight;
+
+    private Bitmap currentFrameBitmap;
 
     @Override
     public void onCreate() {
@@ -47,7 +50,6 @@ public class ScreenCaptureService extends Service {
 
         handler = new Handler(Looper.getMainLooper());
 
-        // Get screen metrics
         WindowManager windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         Display display = windowManager.getDefaultDisplay();
         DisplayMetrics metrics = new DisplayMetrics();
@@ -76,7 +78,6 @@ public class ScreenCaptureService extends Service {
     private void initVirtualDisplay() {
         if (mediaProjection == null) return;
 
-        // Register callback to manage MediaProjection lifecycle
         mediaProjection.registerCallback(new MediaProjection.Callback() {
             @Override
             public void onStop() {
@@ -90,7 +91,6 @@ public class ScreenCaptureService extends Service {
             }
         }, handler);
 
-        // Create ImageReader to capture screen frames
         imageReader = ImageReader.newInstance(screenWidth, screenHeight, PixelFormat.RGBA_8888, 2);
 
         mediaProjection.createVirtualDisplay(
@@ -108,21 +108,24 @@ public class ScreenCaptureService extends Service {
             try {
                 image = reader.acquireLatestImage();
                 if (image != null) {
-                    // Convert Image to Bitmap
                     Bitmap bitmap = ImageUtils.imageToBitmap(image);
                     image.close();
 
                     if (bitmap != null) {
-                        // Pass bitmap to detection handler (stub for now)
-                        DetectionHandler.processBitmap(bitmap);
+                        currentFrameBitmap = bitmap;
+                        Log.d("ScreenCaptureService", "Captured frame size: " + bitmap.getWidth() + "x" + bitmap.getHeight());
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e("ScreenCaptureService", "Error capturing frame", e);
             } finally {
                 if (image != null) image.close();
             }
         }, handler);
+    }
+
+    public Bitmap getCurrentFrame() {
+        return currentFrameBitmap;
     }
 
     @Nullable

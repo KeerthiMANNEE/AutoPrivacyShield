@@ -1,62 +1,71 @@
 package com.example.autoprivacyshield;
 
-import android.Manifest;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.media.projection.MediaProjectionManager;
-import android.os.Build;
+import android.content.IntentFilter;
+import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.widget.Button;
+import android.os.Handler;
 import android.widget.ImageView;
+import android.widget.TextView;
 
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 public class MainActivity extends AppCompatActivity {
-    private static final int REQUEST_CODE = 1000;
-    private static final int REQUEST_POST_NOTIFICATIONS = 101;
-
     private ImageView imageView;
-    private MediaProjectionManager projectionManager;
+    private TextView notificationTextView;
+    private Handler handler;
+    private ScreenCaptureService captureService; // Bind or reference your service instance accordingly
+    private NotificationBroadcastReceiver notificationReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Button startBtn = findViewById(R.id.startBtn);
         imageView = findViewById(R.id.imageView);
+        notificationTextView = findViewById(R.id.notificationTextView);
+        handler = new Handler();
 
-        projectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
+        notificationReceiver = new NotificationBroadcastReceiver();
+        IntentFilter filter = new IntentFilter(NotificationService.ACTION_NEW_NOTIFICATION);
+        // Register receiver with LocalBroadcastManager
+        LocalBroadcastManager.getInstance(this).registerReceiver(notificationReceiver, filter);
 
-        requestNotificationPermission();
-
-        startBtn.setOnClickListener(v -> {
-            Intent captureIntent = projectionManager.createScreenCaptureIntent();
-            startActivityForResult(captureIntent, REQUEST_CODE);
-        });
-    }
-
-    private void requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQUEST_POST_NOTIFICATIONS);
+        // Periodic update of ImageView with latest captured frame
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Bitmap frame = null;
+                if (captureService != null) {
+                    frame = captureService.getCurrentFrame();
+                }
+                if (frame != null) {
+                    imageView.setImageBitmap(frame);
+                }
+                handler.postDelayed(this, 1000);
             }
-        }
+        }, 1000);
+
+        // TODO: Bind or obtain your ScreenCaptureService instance to set captureService
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_CODE && resultCode == RESULT_OK && data != null) {
-            Intent serviceIntent = new Intent(this, ScreenCaptureService.class);
-            serviceIntent.putExtra("resultCode", resultCode);
-            serviceIntent.putExtra("data", data);
-            startForegroundService(serviceIntent);
+    protected void onDestroy() {
+        super.onDestroy();
+        // Unregister receiver with LocalBroadcastManager
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(notificationReceiver);
+    }
+
+    private class NotificationBroadcastReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (NotificationService.ACTION_NEW_NOTIFICATION.equals(intent.getAction())) {
+                String notificationText = intent.getStringExtra(NotificationService.EXTRA_NOTIFICATION_TEXT);
+                notificationTextView.setText(notificationText);
+            }
         }
     }
 }
