@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
         android:allowBackup="true"
@@ -25,6 +27,19 @@
             </intent-filter>
         </activity>
 
+        <!-- Team B Testing Activities -->
+        <activity
+            android:name=".FaceOcrActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".OCRActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".FaceDetectionActivity"
+            android:exported="false" />
+
         <!-- Foreground Service for screen capture -->
         <service
             android:name=".ScreenCaptureService"
@@ -40,8 +55,6 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
-
-        <!-- Removed static receiver declaration for NotificationBroadcastReceiver -->
 
     </application>
 
