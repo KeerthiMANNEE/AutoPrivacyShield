@@ -1,151 +1,82 @@
 package com.example.autoprivacyshield;
 
-import android.content.ComponentName;
 import android.content.Intent;
-import android.content.ServiceConnection;
-import android.graphics.Bitmap;
+import android.media.projection.MediaProjectionManager;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.IBinder;
-import android.util.Log;
 import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "MainActivity";
-
-    private ImageView imageView;
-    private TextView notificationTextView;
-    private Button startCaptureBtn, startStreamBtn, stopStreamBtn;
-    private Handler handler;
-
-    private ScreenCaptureService captureService;
-    private boolean isBound = false;
-
-    private NotificationBroadcastReceiver notificationReceiver;
-
-    private final String rtmpUrl = "rtmp://a.rtmp.youtube.com/live2/YOUR_STREAM_KEY";  // Replace with your actual YouTube Live stream key
+    private Button startCaptureBtn, startRecordBtn, stopRecordBtn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        imageView = findViewById(R.id.imageView);
-        notificationTextView = findViewById(R.id.notificationTextView);
         startCaptureBtn = findViewById(R.id.startBtn);
-        startStreamBtn = findViewById(R.id.startStreamBtn);
-        stopStreamBtn = findViewById(R.id.stopStreamBtn);
-        handler = new Handler();
+        startRecordBtn = findViewById(R.id.btnStartStream);
+        stopRecordBtn = findViewById(R.id.btnStopStream);
 
-        notificationReceiver = new NotificationBroadcastReceiver();
-
-        LocalBroadcastManager.getInstance(this).registerReceiver(
-                notificationReceiver,
-                new android.content.IntentFilter(NotificationService.ACTION_NEW_NOTIFICATION)
-        );
+        // Disable recording buttons initially
+        startRecordBtn.setEnabled(false);
+        stopRecordBtn.setEnabled(false);
 
         startCaptureBtn.setOnClickListener(v -> requestScreenCapture());
 
-        startStreamBtn.setOnClickListener(v -> {
-            if (isBound && captureService != null) {
-                captureService.startStream(rtmpUrl);
-                Toast.makeText(this, "Streaming started", Toast.LENGTH_SHORT).show();
-            }
+        startRecordBtn.setOnClickListener(v -> {
+            Intent startIntent = new Intent(this, ScreenCaptureService.class);
+            startIntent.setAction("START_STREAM");
+            startService(startIntent);
+
+            startRecordBtn.setEnabled(false);
+            stopRecordBtn.setEnabled(true);
+            Toast.makeText(this, "Screen recording started", Toast.LENGTH_SHORT).show();
         });
 
-        stopStreamBtn.setOnClickListener(v -> {
-            if (isBound && captureService != null) {
-                captureService.stopStream();
-                Toast.makeText(this, "Streaming stopped", Toast.LENGTH_SHORT).show();
-            }
+        stopRecordBtn.setOnClickListener(v -> {
+            Intent stopIntent = new Intent(this, ScreenCaptureService.class);
+            stopIntent.setAction("STOP_STREAM");
+            startService(stopIntent);
+
+            startRecordBtn.setEnabled(true);
+            stopRecordBtn.setEnabled(false);
+            Toast.makeText(this, "Screen recording stopped", Toast.LENGTH_SHORT).show();
         });
-
-        Intent serviceIntent = new Intent(this, ScreenCaptureService.class);
-        bindService(serviceIntent, serviceConnection, BIND_AUTO_CREATE);
-
-        handler.postDelayed(frameUpdateRunnable, 1000);
     }
 
     private void requestScreenCapture() {
-        android.media.projection.MediaProjectionManager projectionManager =
-                (android.media.projection.MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
-
-        if (projectionManager != null) {
-            Intent captureIntent = projectionManager.createScreenCaptureIntent();
-            screenCaptureResultLauncher.launch(captureIntent);
+        MediaProjectionManager pm = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
+        if (pm == null) {
+            Toast.makeText(this, "MediaProjection not available", Toast.LENGTH_SHORT).show();
+            return;
         }
+        Intent intent = pm.createScreenCaptureIntent();
+        screenCaptureLauncher.launch(intent);
     }
 
-    private final ActivityResultLauncher<android.content.Intent> screenCaptureResultLauncher =
-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-                if (result.getResultCode() == RESULT_OK) {
-                    Intent serviceIntent = new Intent(this, ScreenCaptureService.class);
-                    serviceIntent.putExtra("resultCode", result.getResultCode());
-                    serviceIntent.putExtra("data", result.getData());
-                    startForegroundService(serviceIntent);
+    private final ActivityResultLauncher<Intent> screenCaptureLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Intent setupIntent = new Intent(this, ScreenCaptureService.class);
+                    setupIntent.setAction("SETUP_PROJECTION");
+                    setupIntent.putExtra("resultCode", result.getResultCode());
+                    setupIntent.putExtra("data", result.getData());
+                    startService(setupIntent);
 
-                    Toast.makeText(this, "Privacy protection is now active!", Toast.LENGTH_LONG).show();
-                    startCaptureBtn.setText("Privacy Protection Active");
+                    Toast.makeText(this, "Screen capture permission granted", Toast.LENGTH_SHORT).show();
+
                     startCaptureBtn.setEnabled(false);
+                    startRecordBtn.setEnabled(true);
                 } else {
                     Toast.makeText(this, "Screen capture permission denied", Toast.LENGTH_SHORT).show();
                 }
-            });
-
-    private final Runnable frameUpdateRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (isBound && captureService != null) {
-                Bitmap currentFrame = captureService.getCurrentFrame();
-                if (currentFrame != null) {
-                    imageView.setImageBitmap(currentFrame);
-                }
             }
-            handler.postDelayed(this, 1000);
-        }
-    };
-
-    private final ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder binder) {
-            ScreenCaptureService.LocalBinder localBinder = (ScreenCaptureService.LocalBinder) binder;
-            captureService = localBinder.getService();
-            isBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            isBound = false;
-            captureService = null;
-        }
-    };
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (isBound) {
-            unbindService(serviceConnection);
-            isBound = false;
-        }
-        handler.removeCallbacksAndMessages(null);
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(notificationReceiver);
-    }
-
-    private class NotificationBroadcastReceiver extends android.content.BroadcastReceiver {
-        @Override
-        public void onReceive(android.content.Context context, android.content.Intent intent) {
-            if (NotificationService.ACTION_NEW_NOTIFICATION.equals(intent.getAction())) {
-                String notificationText = intent.getStringExtra(NotificationService.EXTRA_NOTIFICATION_TEXT);
-                notificationTextView.setText("Latest: " + notificationText);
-            }
-        }
-    }
+    );
 }

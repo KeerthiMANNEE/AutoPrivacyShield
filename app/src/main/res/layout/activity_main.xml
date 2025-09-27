@@ -18,27 +18,30 @@
         android:layout_height="300dp"
         android:layout_marginTop="16dp"
         android:scaleType="fitCenter"
-        android:contentDescription="Screen capture preview"/>
+        android:contentDescription="Screen capture preview" />
 
     <TextView
         android:id="@+id/notificationTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Latest notification will be shown here"/>
+        android:text="Latest notification will be shown here" />
 
     <Button
-        android:id="@+id/startStreamBtn"
+        android:id="@+id/btnStartStream"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Start Streaming"
-        android:layout_marginTop="24dp"/>
+        android:text="Start Stream"
+        android:layout_marginTop="24dp" />
 
     <Button
-        android:id="@+id/stopStreamBtn"
+        android:id="@+id/btnStopStream"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Stop Streaming"
-        android:layout_marginTop="8dp"/>
+        android:text="Stop Stream"
+        android:layout_marginTop="8dp" />
+
+
+
 
 </LinearLayout>
