@@ -15,7 +15,7 @@ public class MaskingUtils {
         Canvas canvas = new Canvas(mutableBitmap);
         Paint paint = new Paint();
         paint.setMaskFilter(new BlurMaskFilter(15, BlurMaskFilter.Blur.NORMAL));
-        paint.setAlpha(180); // semi-transparent
+        paint.setAlpha(180);
 
         for (Rect rect : sensitiveAreas) {
             canvas.drawRect(rect, paint);

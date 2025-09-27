@@ -3,9 +3,8 @@ package com.example.autoprivacyshield;
 import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
-import android.graphics.Bitmap.Config;
 import android.media.Image;
-
+import android.graphics.Bitmap.Config;
 import java.nio.ByteBuffer;
 
 public class ImageUtils {
@@ -24,7 +23,7 @@ public class ImageUtils {
                     Config.ARGB_8888);
             bitmap.copyPixelsFromBuffer(buffer);
 
-            // Crop the bitmap to original size
+            // Crop to original size
             Bitmap croppedBitmap = Bitmap.createBitmap(bitmap, 0, 0, image.getWidth(), image.getHeight());
             bitmap.recycle();
             return croppedBitmap;

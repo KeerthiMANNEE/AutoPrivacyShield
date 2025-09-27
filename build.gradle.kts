@@ -1,8 +1,15 @@
-plugins {
-    id("com.android.application") version "8.13.0" apply false
-    id("com.android.library") version "8.13.0" apply false
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        maven("https://jitpack.io") // Include jitpack here for plugin dependencies if needed
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.13.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.10")
+    }
 }
 
-tasks.register("clean", Delete::class) {
-    delete(rootProject.buildDir)
+allprojects {
+    // keep this empty or remove repositories block to avoid conflict with settings.gradle.kts
 }
